@@ -1,0 +1,183 @@
+---
+title: "Ejercicio 2 De Métodos De Predicción"
+author: ("Mario García Berenguer","David Hernando González","Eder Tarifa Fernández")
+date: "2023-11-28"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Antes de comenzar con el ejercicio vamos a instalar todas las librerias que vamos
+a usar para su realización.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+library(FactoMineR)
+library(factoextra)
+library(FactoClass)
+library(RColorBrewer)
+library("corrplot")
+
+
+library(readxl)
+
+```
+
+Una vez tenemos las librerias instaladas, procedemos a leer los datos y a echarles
+un primer vistazo.
+
+```{r}
+
+cochesExcel <- read_excel("coches.xls", col_names = TRUE)
+tablaCoches <- data.frame(A = cochesExcel$A, B = cochesExcel$B, C = cochesExcel$C, D = cochesExcel$D, row.names = cochesExcel$PAIS) 
+#View(tablaCoches)
+summary(tablaCoches)
+
+```
+
+Si queremos visualizar la tabla de contingencia podemos hacer lo siguiente:
+
+```{r}
+
+mosaicplot(tablaCoches, main="", space=c(40, 40))
+
+```
+Para comenzar el análisis por correspondencias, debemos primero ver si existe
+alguna relación o dependencia entre las variables. Para ello, realizaremos el
+test de la chi-cuadrado.
+
+```{r}
+
+chisq <- chisq.test(tablaCoches)
+chisq
+
+```
+Vemos claramente que el p-valor que obtenemos al realizar el test es minúsculo,
+mucho menor que 0.05, por lo que podemos descartar que las variables sean 
+independientes.
+
+Por tanto, podemos continuar con nuestro análisis por correspondencia.
+
+
+```{r}
+analisisCoches <- CA(tablaCoches, graph = FALSE)
+analisisCoches$eig
+```
+```{r}
+fviz_screeplot(analisisCoches, addlabels = TRUE, ylim = c(0, 60))
+```
+Vemos que el 87% de la variabilidad es explicada por las dos primeras componentes, 
+por lo que vamos a poder representar los datos en 2 dimensiones sin problemas.
+
+```{r}
+analisisCoches$row
+```
+
+```{r}
+fviz_ca_row(analisisCoches, repel = TRUE)
+```
+En este gráfico podemos ver la variable País representada en dos dimensiones, con
+un 87.5% de variabilidad explicada.
+Vemos que los Países más mediterráneos y más occidentales de europa parecen estar
+muy pegados, y tener comportamientos muy similares. Por otro lado tenemos los países
+nórdicos, como polonia o suecia, y a rusia, aunque está bastante alejado. Por último,
+como era de esperar, están Inglaterra y Suecia, donde se conduce por la izquierda.
+
+```{r}
+par(mfrow = c(1,2))
+corrplot(analisisCoches$row$contrib, is.corr=FALSE,main="")    
+corrplot(analisisCoches$row$cos2, is.corr=FALSE,main="")    
+```
+Cuando nos fijamos en la contribución absoluta, nos damos cuenta de que rusia es
+quien más peso tiene en la primera dimensión con diferencia. En la segunda dimensión
+este papel parecen tomarlo los países angloparlantes Inglaterra y Irlanda. En la
+tercera dimensión, aunque con una variabilidad bastante menor encontramos a países
+como Holanda, Bélgica o Grecia.
+Este comentario lógicamente coincide con el gráfico mostrado, ya que Rusia es el
+país más alejado en el eje X (1º dimensión), y Inglaterra y Irlanda son los países
+más alejados en el eje Y (2º dimensión).
+
+Si hablamos de la contribución relativa, debemos de mencionar que esta mide el peso
+que tiene cada dimensión en la explicación de los países. Podemos ver que los países
+nórdicos están explicados prácticamente en la primera dimensión, mientras que los países
+mediterráneos como España e Italia, los países angloparlantes, y Portugal se explican
+mejor en la segunda dimensión. La tercera dimensión ya no la podemos mostrar, pero sería
+la que explicaría a países más del interior de Europa, como Alemania o Suiza.
+
+
+
+Una vez hemos acabado de analizar los perfiles de las filas, vamos a realizar un
+análisis de los perfiles de las columnas.
+
+```{r}
+analisisCoches$col
+```
+```{r}
+fviz_ca_col(analisisCoches, repel=TRUE)
+```
+Vemos que las marcas D y C están muy alejadas del resto, mientras que A y B si que
+parecen más similares en dos dimensiones, ya que se encuentran más cerca. Veremos
+que nos dice la contribución absoluta y la contribución relativa.
+
+```{r}
+par(mfrow = c(1,2))
+corrplot(analisisCoches$col$contrib, is.corr=FALSE,main="")    
+corrplot(analisisCoches$col$cos2, is.corr=FALSE,main="") 
+```
+Cuando analizamos las contribuciones absolutas nos damos cuenta de que C es la marca
+de coche que más peso tiene en la primera dimensión (eje X). En la segunda dimensión
+debemos destacar la marca de coches D, aunque también la marca A tiene un poco de peso. 
+La tercera dimensión ya no es representable, pero se la reparten mayororitariamente 
+entre las marcas A y B.
+
+En cuanto a las contribuciones relativas, C parece explicable casi al completo por
+la primera dimensión (eje X). En la segunda dimensión vemos explicadas las marcas 
+A y D, aunque realmente A lo está en un 59%, ya que también se explica en la primera
+(13%) y tercera (28%) dimensión. La marca B esta explicada en la tercera dimensión
+en un 77%.
+
+
+Después de analizar tanto los países como las marcas de coches, podemos intentar
+sacar conclusiones más generales.
+
+```{r}
+fviz_ca_biplot(analisisCoches, repel = TRUE)
+```
+Cuando mostramos el gráfico del análisis de componentes completo, nos damos cuenta
+de que marcas están más relacionadas con cada país.
+
+Por un lado, vemos que la marca de coches A está bastante cerca de los países occidentales
+de Europa, pero sobretodo parece acercarse a los mediterráneos, como España, Portugal,
+Grecia, Italia, ... Podemos suponer que esta marca de coches ofrece un buen servicio
+en cuanto a coches descapotables o con un buen sistema de aire acondicionado, ya que
+estas zonas son las más cálidas de Europa. 
+
+En cuanto a la marca de coches B, esta también está muy cercana a los países occidentales
+europeos, aunque parece ser más del estilo de países como Alemania, Holanda, Suiza,
+... Esta claro que esta marca de coches, aunque es similar a la marca A, no comparte
+todas sus carácterísticas, y parece enfocarse más a ofrecer un buen coche en zonas 
+más lluviosas y frías.
+
+La marca de coches C se diferencia bastante del resto, posicionandose en uno de los
+extremos del eje X. Los países más cercanos a esta marca son los países escandinavos, 
+junto con Rusia y Polonia. La principal hipótesis por la que creemos que la marca C
+se diferencia tanto de las demás es que se trata de una marca histórica desarrollada
+por la industria de la URSS, ya que parece muy popular en países donde este Estado
+tuvo gran influencia, y es muy distante con las marcas más alineadas con los países
+occidentales. Lógicamente, parece una marca de coches que vende vehículos preparados
+para funcionar a temperaturas extremadamente frías, y sobre terrenos como nieve o 
+incluso hielo.
+
+Por último, la marca de coches D es una marca claramente popular en los países
+angloparlantes, tanto en Inglaterra como en Irlanda. La principal razón por la que
+vemos esta clara diferencia con las otras tres marcas es que en estos países se 
+conduce por la izquierda, por lo que las marcas de coches que vendan vehículos allí
+deben de tener las modificaciones necesarias como para que se pueda conducir según
+sus reglas.
+
+En conclusión, podemos decir que la marca A es la más popular en los países
+mediterráneos, la marca B lo es en zonas como Alemania o Países Bajos, la marca C
+está pensada más para usarse en países fríos como Rusia o países escandinavos, y 
+la marca D probablemente sea una marca de coches para conducir por la izquierda.
